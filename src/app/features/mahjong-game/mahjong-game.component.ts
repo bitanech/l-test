@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import { debounceTime, delay, filter } from 'rxjs/operators';
+import { debounceTime, filter } from 'rxjs/operators';
 
 import { Card } from '../../interfaces/card';
 import { MahjongService } from '../../services/mahjong.service';
@@ -52,9 +52,7 @@ export class MahjongGameComponent implements OnInit, OnDestroy {
 
     const sub2: Subscription = this.cardsList$
       .pipe(
-        debounceTime(800),
-        filter(() => this.pairIndex.getValue().length === pairsLength),
-        delay(2000),
+        debounceTime(2000),
         filter(() => this.pairIndex.getValue().length === pairsLength),
       )
       .subscribe(() => {
@@ -75,9 +73,11 @@ export class MahjongGameComponent implements OnInit, OnDestroy {
   }
 
   private hideCards(cards: Card[]) {
-    const hiddenCards: Card[] = cards.map((c: Card) => ({...c, state: CardState.Closed}));
+    cards.forEach((c: Card, i: number) => {
+      cards[i].state = CardState.Closed;
+    });
 
-    this.cardsList$.next(hiddenCards);
+    this.cardsList$.next(cards);
   }
 
   private activateCards(indexArr: number[]) {
@@ -85,7 +85,7 @@ export class MahjongGameComponent implements OnInit, OnDestroy {
 
     indexArr.forEach(v => {
       if (list[v].state !== CardState.Selected) {
-        list[v] = { ...list[v], state: CardState.Selected };
+        list[v].state = CardState.Selected;
       }
     });
 
@@ -97,12 +97,16 @@ export class MahjongGameComponent implements OnInit, OnDestroy {
 
     indexArr
       .slice(0, 2)
-      .forEach(v => list[v] = { ...list[v], state: CardState.Opened });
+      .forEach(v => {
+        list[v].state = CardState.Opened;
+      });
 
     indexArr.splice(0, 2);
 
     indexArr
-      .forEach(v => list[v] = { ...list[v], state: CardState.Selected });
+      .forEach(v => {
+        list[v].state = CardState.Selected;
+      });
 
     this.cardsList$.next(list);
 
@@ -113,7 +117,9 @@ export class MahjongGameComponent implements OnInit, OnDestroy {
     const list: Card[] = this.cardsList$.getValue();
 
     indexArr
-      .forEach(v => list[v] = { ...list[v], state: CardState.Closed });
+      .forEach(v => {
+        list[v].state = CardState.Closed;
+      });
 
     this.cardsList$.next(list);
     this.pairIndex.next([]);

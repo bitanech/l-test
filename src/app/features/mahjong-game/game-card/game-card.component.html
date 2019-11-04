@@ -1,10 +1,6 @@
-<div [ngClass]="{
-  'hidden': CARD_STATES.Closed === card.state,
-  'active': CARD_STATES.Selected === card.state,
-  'opened': CARD_STATES.Opened === card.state
-  }">
+<div [@hiddenActive]="state | gameCardState" [ngClass]="{'hidden': state === CARD_STATES.Closed}">
   <p >
-    {{card.value}}
+    {{ value }}
   </p>
 </div>
 

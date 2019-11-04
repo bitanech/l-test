@@ -6,11 +6,13 @@ import { MahjongGameComponent } from './mahjong-game.component';
 import { GameCardComponent } from './game-card/game-card.component';
 import { MahjongService } from '../../services/mahjong.service';
 import { config, GAME_CONFIGURATION } from './mahjong-game.config';
+import { GameCardStatePipe } from './game-card/game-card-state.pipe';
 
 @NgModule({
   declarations: [
     MahjongGameComponent,
-    GameCardComponent
+    GameCardComponent,
+    GameCardStatePipe
   ],
   imports: [
     CommonModule,
