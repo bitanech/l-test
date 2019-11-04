@@ -1,0 +1,25 @@
+p {
+  margin: 0;
+  padding: 15px 0;
+  text-align: center;
+  cursor: pointer;
+}
+
+div {
+  &.hidden {
+    p {
+      opacity: 0;
+    }
+  }
+}
+.hidden {
+  box-shadow: 0 0 15px -3px rgba(8,31,11,1);
+}
+
+.active {
+  box-shadow: 0 0 15px -3px rgba(181,45,181,1);
+}
+
+.opened {
+  box-shadow: 0 0 15px -3px rgba(33,158,48,1);
+}

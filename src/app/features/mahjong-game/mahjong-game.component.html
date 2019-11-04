@@ -1,0 +1,7 @@
+<h1>Mahjong-like game</h1>
+
+<ul #container>
+  <li *ngFor="let card of cardsList$ | async; let i = index">
+    <app-game-card [card]="card" (click)="onCardClick(i)"></app-game-card>
+  </li>
+</ul>

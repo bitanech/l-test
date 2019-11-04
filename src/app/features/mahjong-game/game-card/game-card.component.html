@@ -1,0 +1,10 @@
+<div [ngClass]="{
+  'hidden': CARD_STATES.Closed === card.state,
+  'active': CARD_STATES.Selected === card.state,
+  'opened': CARD_STATES.Opened === card.state
+  }">
+  <p >
+    {{card.value}}
+  </p>
+</div>
+
