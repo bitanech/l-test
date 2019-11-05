@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, Inject, OnDestroy, OnInit } from '@angular/core';
-import { BehaviorSubject, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { debounceTime, filter } from 'rxjs/operators';
 
 import { Card } from '../../interfaces/card';
@@ -14,53 +14,51 @@ import { GAME_CONFIGURATION } from './mahjong-game.config';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MahjongGameComponent implements OnInit, OnDestroy {
-  readonly cardsList$: BehaviorSubject<Card[]> = new BehaviorSubject([]);
-
   private readonly cardClickedIndex$: BehaviorSubject<number> = new BehaviorSubject(undefined);
-  private readonly pairIndex: BehaviorSubject<number[]> = new BehaviorSubject<number[]>([]);
+  private readonly subscriptions: Subscription = new Subscription();
 
-  readonly subscriptions: Subscription = new Subscription();
-
-  private gameStarted = false;
+  cardsList$: Observable<Card[]>;
 
   constructor(private readonly mahjongService: MahjongService,
               @Inject(GAME_CONFIGURATION) private readonly config) {
-    this.cardsList$.next(this.mahjongService.initializeGame());
+    this.cardsList$ = this.mahjongService.cardListChanges$;
   }
 
   ngOnInit(): void {
     const { pairsLength } = this.config;
 
-    this.initGame(3000);
+    this.mahjongService.initGame(3000);
 
     const sub1: Subscription = this.cardClickedIndex$
       .pipe(
-        filter((v: number) => !!this.gameStarted &&
-          this.cardsList$.getValue()[v].state === CardState.Closed)
+        filter((v: number) => !!this.mahjongService.gameStarted &&
+          this.mahjongService.cardsStorage[v].state === CardState.Closed)
       )
       .subscribe((v) => {
-        this.pairIndex.next([...this.pairIndex.getValue(), v]);
+        this.mahjongService.setPairIndex = [...this.mahjongService.pairIndex, v];
 
-        const pairIndex: number[] = this.pairIndex.getValue();
+        const pairIndex: number[] = this.mahjongService.pairIndex;
 
         if (pairIndex.length <= pairsLength) {
-          this.activateCards(pairIndex);
+          this.mahjongService.activateCards(pairIndex);
         } else {
-          this.checkSelectedCards(pairIndex) ? this.openCards(pairIndex) : this.closeCards(pairIndex);
+          this.mahjongService.checkSelectedCards(pairIndex) ?
+            this.mahjongService.openCards(pairIndex) :
+            this.mahjongService.closeCards(pairIndex);
         }
       });
 
     const sub2: Subscription = this.cardsList$
       .pipe(
         debounceTime(2000),
-        filter(() => this.pairIndex.getValue().length === pairsLength),
+        filter(() => this.mahjongService.pairIndex.length === pairsLength),
       )
       .subscribe(() => {
-        const pairIndex = this.pairIndex.getValue();
+        const pairIndex = this.mahjongService.pairIndex;
 
-        this.checkSelectedCards(pairIndex) ?
-            this.openCards(pairIndex) :
-            this.closeCards(pairIndex);
+        this.mahjongService.checkSelectedCards(pairIndex) ?
+            this.mahjongService.openCards(pairIndex) :
+            this.mahjongService.closeCards(pairIndex);
         }
       );
 
@@ -68,78 +66,8 @@ export class MahjongGameComponent implements OnInit, OnDestroy {
     this.subscriptions.add(sub2);
   }
 
-  onCardClick(i: number) {
+  onCardClick(i: number): void {
     this.cardClickedIndex$.next(i);
-  }
-
-  private hideCards(cards: Card[]) {
-    cards.forEach((c: Card, i: number) => {
-      cards[i].state = CardState.Closed;
-    });
-
-    this.cardsList$.next(cards);
-  }
-
-  private activateCards(indexArr: number[]) {
-    const list: Card[] = this.cardsList$.getValue();
-
-    indexArr.forEach(v => {
-      if (list[v].state !== CardState.Selected) {
-        list[v].state = CardState.Selected;
-      }
-    });
-
-    this.cardsList$.next(list);
-  }
-
-  private openCards(indexArr: number[]) {
-    const list: Card[] = this.cardsList$.getValue();
-
-    indexArr
-      .slice(0, 2)
-      .forEach(v => {
-        list[v].state = CardState.Opened;
-      });
-
-    indexArr.splice(0, 2);
-
-    indexArr
-      .forEach(v => {
-        list[v].state = CardState.Selected;
-      });
-
-    this.cardsList$.next(list);
-
-    this.pairIndex.next(indexArr);
-  }
-
-  private closeCards(indexArr: number[]) {
-    const list: Card[] = this.cardsList$.getValue();
-
-    indexArr
-      .forEach(v => {
-        list[v].state = CardState.Closed;
-      });
-
-    this.cardsList$.next(list);
-    this.pairIndex.next([]);
-  }
-
-  private checkSelectedCards(indexArr: number[]) {
-    const list: Card[] = this.cardsList$.getValue();
-
-    const filteredSelected: Card[] = list.filter((c, i) => indexArr.slice(0, 2).includes(i));
-
-    return !!filteredSelected.length &&
-      filteredSelected[0].value === filteredSelected[1].value;
-  }
-
-  private initGame(hideDelay: number): void {
-    const interval = setInterval(() => {
-      this.hideCards(this.cardsList$.getValue());
-      this.gameStarted = true;
-      clearInterval(interval);
-    }, hideDelay);
   }
 
   ngOnDestroy(): void {
